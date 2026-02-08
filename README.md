@@ -40,16 +40,16 @@ http://localhost:8080/docs
 ```
 
 ## Running the Project
-# Requirements
+### Requirements
 - Java 17+ recommended
 - sbt installed
 
-# Start the server
+### Start the server
 ```declarative
 make run
 ```
 
-# Server will start on:
+### Server will start on:
 ```declarative
 http://localhost:8080
 ```
