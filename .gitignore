@@ -1,5 +1,40 @@
-*.class
-*.log
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+# sbt
+# (may want to keep parts of 'project')
+bin/
+target/
+build/
+
+*.ivy2/
+*.sbt/
+
+out/
+
+
+# intellij idea
+*.log
+*.iml
+*.ipr
+*.iws
+.idea
+.bsp/
+# mac
+.DS_Store
+
+# other?
+.history
+.scala_dependencies
+.cache
+.cache-main
+*.mgc
+
+#general
+*.class
+
+# metals
+.bloop
+.metals
+.vscode
+metals.sbt
+
+__pycache__
