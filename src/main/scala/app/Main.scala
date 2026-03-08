@@ -15,6 +15,9 @@ object Main extends IOApp.Simple:
 
   def run: IO[Unit] =
     for
+      // This creates a bounded queue in memory that can hold up to 100 events.
+      // For local environment it's fine but in production,
+      // we would want to use something like Kafka or RabbitMQ instead of an in-memory queue.
       queue <- Queue.bounded[IO, Event](100)
       _ <- EmberServerBuilder
         .default[IO]
