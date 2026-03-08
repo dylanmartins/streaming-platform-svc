@@ -10,12 +10,19 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % "1.10.9",
       "org.typelevel" %% "log4cats-slf4j" % "2.7.0",
       "ch.qos.logback" % "logback-classic" % "1.5.6",
+      "co.fs2" %% "fs2-core" % "3.10.2",
 
-      // ✅ make Host/Port literals available
+      // make Host/Port literals available
       "com.comcast" %% "ip4s-core" % "3.6.0",
 
       // Tapir OpenAPI docs
       "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % "1.10.9",
-      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % "1.10.9"
+      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % "1.10.9",
+
+      // Tapir Circe integration
+      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % "1.10.9",
+      "io.circe" %% "circe-generic" % "0.14.10",
+      "io.circe" %% "circe-core" % "0.14.10",
+      "io.circe" %% "circe-parser" % "0.14.10"
     )
   )
