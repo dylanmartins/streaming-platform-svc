@@ -10,6 +10,8 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % "1.10.9",
       "org.typelevel" %% "log4cats-slf4j" % "2.7.0",
       "ch.qos.logback" % "logback-classic" % "1.5.6",
+
+      // fs2 for streaming and queue handling
       "co.fs2" %% "fs2-core" % "3.10.2",
 
       // make Host/Port literals available

@@ -14,3 +14,7 @@ Decision: Use http4s.
 ### Context & Reasoning:
 Functional purity: As a Cats-native library, http4s aligns with the goal of keeping the architecture functionally "pure".
 Consistency: Since Pekko Streams was rejected in favor of FS2, integrating Pekko HTTP would introduce an unnecessary dependency on the Pekko ecosystem without the benefit of its streaming integration.
+
+
+### Notes:
+POST /events -> queue -> background consumer -> log
