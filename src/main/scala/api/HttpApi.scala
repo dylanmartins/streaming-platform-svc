@@ -14,12 +14,10 @@ import java.util.UUID
 
 object HttpApi:
 
-  // NOTE: This is the maximum number of events that can be held in the queue at any given time.
-  private val queueCapacity = 100
-
   def routes(
       queue: Queue[IO, Event],
-      statsRef: Ref[IO, ProcessingStats]
+      statsRef: Ref[IO, ProcessingStats],
+      queueCapacity: Int
   ): HttpRoutes[IO] =
     val endpointDescriptions = List(
       Endpoints.health,

@@ -16,6 +16,7 @@ object Main extends IOApp.Simple:
 
   def run: IO[Unit] =
     val maxEventsInQueue = 100
+
     for
       // This creates a bounded queue in memory that can hold up to 100 events.
       // NOTE: For local environment it's fine but in production,
@@ -35,7 +36,7 @@ object Main extends IOApp.Simple:
         .default[IO]
         .withHost(host"0.0.0.0")
         .withPort(port"8080")
-        .withHttpApp(HttpApi.routes(queue, statsRef).orNotFound)
+        .withHttpApp(HttpApi.routes(queue, statsRef, maxEventsInQueue).orNotFound)
         .build
         .useForever
     yield ()
