@@ -24,4 +24,5 @@ object EventConsumer:
     // This creates an fs2 Stream that continuously reads events from the queue.
     Stream
       .fromQueueUnterminated(queue)
-      .evalMap(process)
+      // NOTE: The `parEvalMap(5)` means that up to 5 events can be processed concurrently.
+      .parEvalMap(5)(process)
