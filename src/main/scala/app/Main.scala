@@ -14,12 +14,13 @@ object Main extends IOApp.Simple:
 
   private given Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  def run: IO[Unit] =
+  def run: IO[Unit] = {
+    val maxEventsInQueue = 100
     for
       // This creates a bounded queue in memory that can hold up to 100 events.
       // NOTE: For local environment it's fine but in production,
       // we would want to use something like Kafka or RabbitMQ instead of an in-memory queue.
-      queue <- Queue.bounded[IO, Event](100)
+      queue <- Queue.bounded[IO, Event](maxEventsInQueue)
       // Start the event consumer in the background. This will continuously read events from the queue and print them.
       _ <- EventConsumer
         .stream(queue)
@@ -35,3 +36,4 @@ object Main extends IOApp.Simple:
         .build
         .useForever
     yield ()
+  }

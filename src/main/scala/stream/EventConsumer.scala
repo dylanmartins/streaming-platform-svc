@@ -20,9 +20,11 @@ object EventConsumer:
       _ <- IO.println(s"[consumer] finished processing event ${event.id.value}")
     yield ()
 
-  def stream(queue: Queue[IO, Event]): Stream[IO, Unit] =
+  def stream(queue: Queue[IO, Event]): Stream[IO, Unit] = {
+    val maxParallelism = 5
     // This creates an fs2 Stream that continuously reads events from the queue.
     Stream
       .fromQueueUnterminated(queue)
-      // NOTE: The `parEvalMap(5)` means that up to 5 events can be processed concurrently.
-      .parEvalMap(5)(process)
+      // NOTE: The `parEvalMap(maxParallelism)` means that up to X events can be processed concurrently.
+      .parEvalMap(maxParallelism)(process)
+  }
