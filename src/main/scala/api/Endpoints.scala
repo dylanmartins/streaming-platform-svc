@@ -1,6 +1,6 @@
 package api
 
-import domain.EventId
+import domain.{EventId, ProcessingStats}
 import io.circe.generic.auto.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
@@ -23,3 +23,8 @@ object Endpoints:
       .in(jsonBody[IngestEventRequest])
       .errorOut(stringBody)
       .out(jsonBody[EventId])
+
+  val stats: PublicEndpoint[Unit, Unit, ProcessingStats, Any] =
+    endpoint.get
+      .in("stats")
+      .out(jsonBody[ProcessingStats])

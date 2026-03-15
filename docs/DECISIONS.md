@@ -34,4 +34,8 @@ Risks:
 - memory retention
 Also, if you implement backpressure correctly, you can have a smaller queue size and rely on the backpressure to slow down the producers instead of buffering too many events in memory.
 
-
+Ref
+A Ref[F, A] is a safe mutable reference in an effectful/concurrent program.
+- shared state
+- updated safely
+- usable from multiple fibers
