@@ -34,6 +34,21 @@ object EventConsumer:
       _ <- IO.println(s"[consumer] finished processing event ${event.id.value}")
     yield ()
 
+  private def retry[A](
+      ioa: IO[A],
+      maxRetries: Int,
+      delay: FiniteDuration
+  ): IO[A] =
+    ioa.handleErrorWith { error =>
+      if maxRetries > 0 then
+        IO.println(
+          s"[consumer] retrying after error: ${error.getMessage}. retries left: $maxRetries"
+        ) *>
+          IO.sleep(delay) *>
+          retry(ioa, maxRetries - 1, delay)
+      else IO.raiseError(error)
+    }
+
   private def processSafely(
       event: Event,
       statsRef: Ref[IO, ProcessingStats]
@@ -48,15 +63,21 @@ object EventConsumer:
             s"[consumer] VALIDATION ERROR for event ${validationError.eventId.value}: ${validationError.reasons.mkString(", ")}"
           )
 
+      // We only retry valid events!
       case Right(validEvent) =>
-        process(validEvent).attempt.flatMap {
+        retry(
+          ioa = process(validEvent),
+          // Retries 2 times, so in total it attempts to process 3 times (1 initial attempt + 2 retries).
+          maxRetries = 2,
+          delay = 1.second
+        ).attempt.flatMap {
           case Right(_) =>
             statsRef.update(stats => stats.copy(processed = stats.processed + 1))
 
           case Left(error) =>
             statsRef.update(stats => stats.copy(failed = stats.failed + 1)) *>
               IO.println(
-                s"[consumer] ERROR processing event ${validEvent.id.value}: ${error.getMessage}"
+                s"[consumer] ERROR processing event ${validEvent.id.value} after retries: ${error.getMessage}"
               )
         }
   }
