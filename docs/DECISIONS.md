@@ -18,3 +18,20 @@ Consistency: Since Pekko Streams was rejected in favor of FS2, integrating Pekko
 
 ### Notes:
 POST /events -> queue -> background consumer -> log
+
+Queue.bounded controls how many events can wait in memory and .parEvalMap controls how many events can be actively worked on at once (parallelims).
+- queue controls buffering/backpressure
+- parEvalMap controls worker parallelism
+
+And why limit is to a specific number `.parEvalMap(maxParallelism)(process)` is better than just start a new parallel thread when the event arrives?
+because if you don't do it in huge load environment you can end up with too many threads and OOM. So you want to control how many events are being processed at the same time.
+Risks:
+- DB connections
+- HTTP client pool size
+- remote service rate limits
+- CPU
+- queue growth
+- memory retention
+Also, if you implement backpressure correctly, you can have a smaller queue size and rely on the backpressure to slow down the producers instead of buffering too many events in memory.
+
+
