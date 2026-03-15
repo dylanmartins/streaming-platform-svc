@@ -3,7 +3,7 @@ package api
 import cats.effect.IO
 import cats.effect.Ref
 import cats.effect.std.Queue
-import domain.{Event, EventId, ProcessingStats}
+import domain.{Event, EventId, ObservabilitySnapshot, ProcessingStats}
 import org.http4s.HttpRoutes
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
@@ -14,6 +14,9 @@ import java.util.UUID
 
 object HttpApi:
 
+  // NOTE: This is the maximum number of events that can be held in the queue at any given time.
+  private val queueCapacity = 100
+
   def routes(
       queue: Queue[IO, Event],
       statsRef: Ref[IO, ProcessingStats]
@@ -21,7 +24,8 @@ object HttpApi:
     val endpointDescriptions = List(
       Endpoints.health,
       Endpoints.ingestEvent,
-      Endpoints.stats
+      Endpoints.stats,
+      Endpoints.observability
     )
 
     val healthServerEndpoint: ServerEndpoint[Any, IO] =
@@ -52,11 +56,24 @@ object HttpApi:
         statsRef.get
       }
 
+    val observabilityServerEndpoint: ServerEndpoint[Any, IO] =
+      Endpoints.observability.serverLogicSuccess[IO] { _ =>
+        for
+          currentQueueSize <- queue.size
+          stats <- statsRef.get
+        yield ObservabilitySnapshot(
+          queueSize = currentQueueSize,
+          queueCapacity = queueCapacity,
+          stats = stats
+        )
+      }
+
     val businessServerEndpoints: List[ServerEndpoint[Any, IO]] =
       List(
         healthServerEndpoint,
         ingestEventServerEndpoint,
-        statsServerEndpoint
+        statsServerEndpoint,
+        observabilityServerEndpoint
       )
 
     val docsServerEndpoints: List[ServerEndpoint[Any, IO]] =

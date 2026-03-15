@@ -1,6 +1,6 @@
 package api
 
-import domain.{EventId, ProcessingStats}
+import domain.{EventId, ObservabilitySnapshot, ProcessingStats}
 import io.circe.generic.auto.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
@@ -28,3 +28,8 @@ object Endpoints:
     endpoint.get
       .in("stats")
       .out(jsonBody[ProcessingStats])
+
+  val observability: PublicEndpoint[Unit, Unit, ObservabilitySnapshot, Any] =
+    endpoint.get
+      .in("observability")
+      .out(jsonBody[ObservabilitySnapshot])
