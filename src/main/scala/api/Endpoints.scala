@@ -20,6 +20,7 @@ object Endpoints:
   val ingestEvent: PublicEndpoint[IngestEventRequest, String, EventId, Any] =
     endpoint.post
       .in("events")
+      .description("Ingest a new event with a type and payload. Returns the generated event ID.")
       .in(jsonBody[IngestEventRequest])
       .errorOut(stringBody)
       .out(jsonBody[EventId])
@@ -27,9 +28,11 @@ object Endpoints:
   val stats: PublicEndpoint[Unit, Unit, ProcessingStats, Any] =
     endpoint.get
       .in("stats")
+      .description("Get processing statistics for received, processed, failed, and validation failed events.")
       .out(jsonBody[ProcessingStats])
 
   val observability: PublicEndpoint[Unit, Unit, ObservabilitySnapshot, Any] =
     endpoint.get
       .in("observability")
+      .description("Get an observability snapshot including queue size, capacity, and processing stats.")
       .out(jsonBody[ObservabilitySnapshot])

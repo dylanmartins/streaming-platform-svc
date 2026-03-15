@@ -1,5 +1,6 @@
 package api
 
+import app.AppConfig
 import cats.effect.IO
 import cats.effect.Ref
 import cats.effect.std.Queue
@@ -17,7 +18,7 @@ object HttpApi:
   def routes(
       queue: Queue[IO, Event],
       statsRef: Ref[IO, ProcessingStats],
-      queueCapacity: Int
+      config: AppConfig
   ): HttpRoutes[IO] =
     val endpointDescriptions = List(
       Endpoints.health,
@@ -61,7 +62,7 @@ object HttpApi:
           stats <- statsRef.get
         yield ObservabilitySnapshot(
           queueSize = currentQueueSize,
-          queueCapacity = queueCapacity,
+          queueCapacity = config.queueCapacity,
           stats = stats
         )
       }

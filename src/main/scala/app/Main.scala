@@ -15,19 +15,19 @@ object Main extends IOApp.Simple:
   private given Logger[IO] = Slf4jLogger.getLogger[IO]
 
   def run: IO[Unit] =
-    val maxEventsInQueue = 100
+    val config = AppConfig.default
 
     for
       // This creates a bounded queue in memory that can hold up to 100 events.
       // NOTE: For local environment it's fine but in production,
       // we would want to use something like Kafka or RabbitMQ instead of an in-memory queue.
-      queue <- Queue.bounded[IO, Event](maxEventsInQueue)
+      queue <- Queue.bounded[IO, Event](config.queueCapacity)
       // This creates a Ref that will hold the processing statistics.
       // NOTE: A Ref is a mutable reference that can be safely shared across multiple fibers (lightweight threads) in a concurrent environment.
       statsRef <- Ref.of[IO, ProcessingStats](ProcessingStats())
       // Start the event consumer in the background. This will continuously read events from the queue and print them.
       _ <- EventConsumer
-        .stream(queue, statsRef)
+        .stream(queue, statsRef, config)
         .compile
         .drain
         .start
@@ -36,7 +36,7 @@ object Main extends IOApp.Simple:
         .default[IO]
         .withHost(host"0.0.0.0")
         .withPort(port"8080")
-        .withHttpApp(HttpApi.routes(queue, statsRef, maxEventsInQueue).orNotFound)
+        .withHttpApp(HttpApi.routes(queue, statsRef, config).orNotFound)
         .build
         .useForever
     yield ()
