@@ -39,3 +39,6 @@ A Ref[F, A] is a safe mutable reference in an effectful/concurrent program.
 - shared state
 - updated safely
 - usable from multiple fibers
+
+
+queue -> validate -> process

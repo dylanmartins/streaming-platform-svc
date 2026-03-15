@@ -2,12 +2,22 @@ package stream
 
 import cats.effect.{IO, Ref}
 import cats.effect.std.Queue
-import domain.{Event, ProcessingStats}
+import domain.{Event, ProcessingStats, ValidationError}
 import fs2.Stream
 
 import scala.concurrent.duration.*
 
 object EventConsumer:
+
+  private def validate(event: Event): Either[ValidationError, Event] =
+    // NOTE: We use `Either` here to represent the possibility of validation failure.
+    val errors = List(
+      Option.when(event.eventType.trim.isEmpty)("eventType must not be empty"),
+      Option.when(event.payload.trim.isEmpty)("payload must not be empty")
+    ).flatten
+
+    if errors.isEmpty then Right(event)
+    else Left(ValidationError(event.id, errors))
 
   private def process(event: Event): IO[Unit] =
     for
@@ -27,20 +37,29 @@ object EventConsumer:
   private def processSafely(
       event: Event,
       statsRef: Ref[IO, ProcessingStats]
-  ): IO[Unit] =
+  ): IO[Unit] = {
     // NOTE: We wrap the `process` call in `handleErrorWith` to catch any exceptions that occur during processing.
     // This way, if one event fails to process, it won't crash the entire stream, and we can log the error instead.
-    process(event).attempt.flatMap {
-      // Updating the statsRef based on whether the processing succeeded or failed.
-      case Right(_) =>
-        statsRef.update(stats => stats.copy(processed = stats.processed + 1))
-
-      case Left(error) =>
-        statsRef.update(stats => stats.copy(failed = stats.failed + 1)) *>
+    // NOTE: Invalid events never reach the `process` function!
+    validate(event) match
+      case Left(validationError) =>
+        statsRef.update(stats => stats.copy(validationFailed = stats.validationFailed + 1)) *>
           IO.println(
-            s"[consumer] ERROR processing event ${event.id.value}: ${error.getMessage}"
+            s"[consumer] VALIDATION ERROR for event ${validationError.eventId.value}: ${validationError.reasons.mkString(", ")}"
           )
-    }
+
+      case Right(validEvent) =>
+        process(validEvent).attempt.flatMap {
+          case Right(_) =>
+            statsRef.update(stats => stats.copy(processed = stats.processed + 1))
+
+          case Left(error) =>
+            statsRef.update(stats => stats.copy(failed = stats.failed + 1)) *>
+              IO.println(
+                s"[consumer] ERROR processing event ${validEvent.id.value}: ${error.getMessage}"
+              )
+        }
+  }
 
   def stream(
       queue: Queue[IO, Event],
