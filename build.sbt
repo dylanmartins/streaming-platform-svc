@@ -25,6 +25,9 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % "1.10.9",
       "io.circe" %% "circe-generic" % "0.14.10",
       "io.circe" %% "circe-core" % "0.14.10",
-      "io.circe" %% "circe-parser" % "0.14.10"
+      "io.circe" %% "circe-parser" % "0.14.10",
+
+      // Testing dependencies
+      "org.typelevel" %% "munit-cats-effect" % "2.0.0" % Test
     )
   )
