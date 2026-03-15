@@ -4,7 +4,7 @@ import app.AppConfig
 import cats.effect.IO
 import cats.effect.Ref
 import cats.effect.std.Queue
-import domain.{Event, EventId, ObservabilitySnapshot, ProcessingStats}
+import domain.{DeadLetterEvent, Event, EventId, ObservabilitySnapshot, ProcessingStats}
 import org.http4s.HttpRoutes
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
@@ -18,19 +18,19 @@ object HttpApi:
   def routes(
       queue: Queue[IO, Event],
       statsRef: Ref[IO, ProcessingStats],
+      deadLetterRef: Ref[IO, Vector[DeadLetterEvent]],
       config: AppConfig
   ): HttpRoutes[IO] =
     val endpointDescriptions = List(
       Endpoints.health,
       Endpoints.ingestEvent,
       Endpoints.stats,
-      Endpoints.observability
+      Endpoints.observability,
+      Endpoints.deadLetters
     )
 
     val healthServerEndpoint: ServerEndpoint[Any, IO] =
-      Endpoints.health.serverLogicSuccess[IO] { _ =>
-        IO.pure("ok")
-      }
+      Endpoints.health.serverLogicSuccess[IO](_ => IO.pure("ok"))
 
     val ingestEventServerEndpoint: ServerEndpoint[Any, IO] =
       Endpoints.ingestEvent.serverLogicSuccess[IO] { request =>
@@ -51,9 +51,7 @@ object HttpApi:
       }
 
     val statsServerEndpoint: ServerEndpoint[Any, IO] =
-      Endpoints.stats.serverLogicSuccess[IO] { _ =>
-        statsRef.get
-      }
+      Endpoints.stats.serverLogicSuccess[IO](_ => statsRef.get)
 
     val observabilityServerEndpoint: ServerEndpoint[Any, IO] =
       Endpoints.observability.serverLogicSuccess[IO] { _ =>
@@ -67,12 +65,18 @@ object HttpApi:
         )
       }
 
+    val deadLettersServerEndpoint: ServerEndpoint[Any, IO] =
+      Endpoints.deadLetters.serverLogicSuccess[IO] { _ =>
+        deadLetterRef.get.map(_.toList)
+      }
+
     val businessServerEndpoints: List[ServerEndpoint[Any, IO]] =
       List(
         healthServerEndpoint,
         ingestEventServerEndpoint,
         statsServerEndpoint,
-        observabilityServerEndpoint
+        observabilityServerEndpoint,
+        deadLettersServerEndpoint
       )
 
     val docsServerEndpoints: List[ServerEndpoint[Any, IO]] =

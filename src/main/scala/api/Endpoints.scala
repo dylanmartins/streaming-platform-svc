@@ -1,6 +1,6 @@
 package api
 
-import domain.{EventId, ObservabilitySnapshot, ProcessingStats}
+import domain.{DeadLetterEvent, EventId, ObservabilitySnapshot, ProcessingStats}
 import io.circe.generic.auto.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
@@ -36,3 +36,9 @@ object Endpoints:
       .in("observability")
       .description("Get an observability snapshot including queue size, capacity, and processing stats.")
       .out(jsonBody[ObservabilitySnapshot])
+
+  val deadLetters: PublicEndpoint[Unit, Unit, List[DeadLetterEvent], Any] =
+    endpoint.get
+      .in("dead-letters")
+      .description("Get a list of events that failed processing after all retries (dead letters).")
+      .out(jsonBody[List[DeadLetterEvent]])

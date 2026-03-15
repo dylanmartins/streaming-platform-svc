@@ -3,9 +3,10 @@ package stream
 import app.AppConfig
 import cats.effect.{IO, Ref}
 import cats.effect.std.Queue
-import domain.{Event, ProcessingStats, ValidationError}
+import domain.{DeadLetterEvent, Event, ProcessingStats, ValidationError}
 import fs2.Stream
 
+import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 
 object EventConsumer:
@@ -56,6 +57,7 @@ object EventConsumer:
   private def processSafely(
       event: Event,
       statsRef: Ref[IO, ProcessingStats],
+      deadLetterRef: Ref[IO, Vector[DeadLetterEvent]],
       config: AppConfig
   ): IO[Unit] = {
     // NOTE: We wrap the `process` call in `handleErrorWith` to catch any exceptions that occur during processing.
@@ -79,9 +81,16 @@ object EventConsumer:
             statsRef.update(stats => stats.copy(processed = stats.processed + 1))
 
           case Left(error) =>
+            val deadLetter = DeadLetterEvent(
+              event = validEvent,
+              reason = error.getMessage,
+              failedAt = Instant.now()
+            )
+
             statsRef.update(stats => stats.copy(failed = stats.failed + 1)) *>
+              deadLetterRef.update(_ :+ deadLetter) *>
               IO.println(
-                s"[consumer] ERROR processing event ${validEvent.id.value} after retries: ${error.getMessage}"
+                s"[consumer] ERROR processing event ${validEvent.id.value} after retries. Moved to dead-letter store: ${error.getMessage}"
               )
         }
   }
@@ -89,6 +98,7 @@ object EventConsumer:
   def stream(
       queue: Queue[IO, Event],
       statsRef: Ref[IO, ProcessingStats],
+      deadLetterRef: Ref[IO, Vector[DeadLetterEvent]],
       config: AppConfig
   ): Stream[IO, Unit] = {
     // This creates an fs2 Stream that continuously reads events from the queue.
@@ -96,5 +106,5 @@ object EventConsumer:
       .fromQueueUnterminated(queue)
       // NOTE: The `parEvalMap(maxParallelism)` means that up to X events can be processed concurrently.
       // NOTE: We pass the `statsRef` to `processSafely` so that it can update the processing statistics for each event, whether it succeeds or fails.
-      .parEvalMap(config.maxParallelism)(event => processSafely(event, statsRef, config))
+      .parEvalMap(config.maxParallelism)(event => processSafely(event, statsRef, deadLetterRef, config))
   }

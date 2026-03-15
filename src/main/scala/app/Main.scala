@@ -4,7 +4,7 @@ import api.HttpApi
 import cats.effect.{IO, IOApp, Ref}
 import cats.effect.std.Queue
 import com.comcast.ip4s.*
-import domain.{Event, ProcessingStats}
+import domain.{DeadLetterEvent, Event, ProcessingStats}
 import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -25,9 +25,12 @@ object Main extends IOApp.Simple:
       // This creates a Ref that will hold the processing statistics.
       // NOTE: A Ref is a mutable reference that can be safely shared across multiple fibers (lightweight threads) in a concurrent environment.
       statsRef <- Ref.of[IO, ProcessingStats](ProcessingStats())
+      // NOTE: The Ref is used again here to store the list of dead letter events.
+      // This allows us to keep track of events that failed processing after all retries.
+      deadLetterRef <- Ref.of[IO, Vector[DeadLetterEvent]](Vector.empty)
       // Start the event consumer in the background. This will continuously read events from the queue and print them.
       _ <- EventConsumer
-        .stream(queue, statsRef, config)
+        .stream(queue, statsRef, deadLetterRef, config)
         .compile
         .drain
         .start
@@ -36,7 +39,7 @@ object Main extends IOApp.Simple:
         .default[IO]
         .withHost(host"0.0.0.0")
         .withPort(port"8080")
-        .withHttpApp(HttpApi.routes(queue, statsRef, config).orNotFound)
+        .withHttpApp(HttpApi.routes(queue, statsRef, deadLetterRef, config).orNotFound)
         .build
         .useForever
     yield ()
