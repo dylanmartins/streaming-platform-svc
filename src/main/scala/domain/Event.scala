@@ -18,6 +18,7 @@ object EventId:
   given Schema[EventId] =
     Schema.schemaForUUID.map(uuid => Some(EventId(uuid)))(_.value)
 
+// TODO: I could implement a real world event, having a proper object for the payload with ENUM and more validation
 final case class Event(
     id: EventId,
     eventType: String,
