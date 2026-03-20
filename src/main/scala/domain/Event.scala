@@ -6,8 +6,6 @@ import sttp.tapir.Schema
 import java.time.Instant
 import java.util.UUID
 
-// In scala adding AnyVal tells the compiler to treat this class as
-// just the raw underlying value (the UUID) at runtime. (Optimization)
 final case class EventId(value: UUID) extends AnyVal
 
 object EventId:
