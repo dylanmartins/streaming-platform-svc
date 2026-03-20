@@ -21,6 +21,8 @@ object Main extends IOApp.Simple:
       // This creates a bounded queue in memory that can hold up to 100 events.
       // NOTE: A bounded queue means that if the queue is full, producers will be suspended until there is space available.
       // This helps to prevent memory overflow and allows for backpressure in the system.
+      // NOTE: Other types of queues include unbounded queues (which can grow indefinitely), priority queues (which order elements based on priority),
+      // tryOffer queues (which return a boolean indicating success or failure of adding an element), and more.
       // NOTE: For local environment it's fine but in production,
       // we would want to use something like Kafka or RabbitMQ instead of an in-memory queue.
       queue <- Queue.bounded[IO, Event](config.queueCapacity)

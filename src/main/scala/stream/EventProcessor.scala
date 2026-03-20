@@ -11,6 +11,8 @@ object EventProcessor:
 
   def validate(event: Event): Either[ValidationError, Event] =
     // NOTE: We use `Either` here to represent the possibility of validation failure.
+    // NOTE: The `Option.when` is a convenient way to conditionally create an error message if a validation rule fails.
+    // We then flatten the list to get rid of the `None` values.
     val errors = List(
       Option.when(event.eventType.trim.isEmpty)("eventType must not be empty"),
       Option.when(event.payload.trim.isEmpty)("payload must not be empty")
@@ -63,6 +65,8 @@ object EventProcessor:
     // NOTE: Invalid events never reach the `process` function!
     validate(event) match
       case Left(validationError) =>
+        // NOTE: The `*>` operator is used to link together multiple IO actions,
+        // where the result of the first action is ignored and only the result of the second action is returned.
         statsRef.update(stats => stats.copy(validationFailed = stats.validationFailed + 1)) *>
           IO.println(
             s"[consumer] VALIDATION ERROR for event ${validationError.eventId.value}: ${validationError.reasons.mkString(", ")}"
